@@ -202,25 +202,46 @@ Outputs: `reports/PathSnap_Technical_Report.pdf`.
 
 ## 6. Two-Laptop Deployment Guide
 
-### On Laptop 1 (Model Server & API):
-1. Connect Laptop 1 and Laptop 2 to the same local Wi-Fi or hotspot.
-2. Find Laptop 1's local IP address (`ipconfig` on Windows or `ifconfig` on Linux, e.g. `192.168.1.15`).
+### Deployment Overview & Working Screenshots
+
+#### 1. Evaluator User Interface (Laptop 2)
+The web interface dynamically queries Laptop 1, displays live KPI metrics (Top-1 Accuracy, Route Continuity, Processing Time, Candidate Miss Rate), and renders the full interactive route map with raw GPS observations, ground-truth path, and reconstructed path:
+
+![Laptop 2 Evaluator UI](visualizations/plots/laptop2_ui_evaluator_dashboard.jpg)
+
+#### 2. Model Server Startup Logs (Laptop 1)
+Upon launch, Laptop 1 initializes the tuned LightGBM model, sets up the HMM Viterbi decoder, loads feature caches, and binds to port 8000:
+
+![Laptop 1 Server Startup](visualizations/plots/laptop1_terminal_startup_logs.jpg)
+
+#### 3. Real-Time Inference Request Logs (Laptop 1)
+When the evaluator triggers an evaluation from Laptop 2, Laptop 1 logs the client IP, trip ID, observation count, latency breakdown, and evaluation metrics:
+
+![Laptop 1 Real-time Inference Logs](visualizations/plots/laptop1_terminal_inference_logs.jpg)
+
+---
+
+### Step-by-Step Instructions
+
+#### On Laptop 1 (Model Server & API):
+1. Connect Laptop 1 and Laptop 2 to the same local Wi-Fi or mobile hotspot.
+2. Find Laptop 1's local IP address (`ipconfig` on Windows or `ifconfig` on Linux, e.g. `10.8.120.252`).
 3. Launch the FastAPI server:
    ```bash
    python -m uvicorn api.main:app --host 0.0.0.0 --port 8000
    ```
-4. The terminal will display live server startup logs and will log incoming evaluation requests in real time.
+4. The terminal will display live server startup logs and will log incoming evaluation requests in real time for evaluator inspection.
 
-### On Laptop 2 (Evaluator UI):
+#### On Laptop 2 (Evaluator UI):
 1. **Option A (Browser Web UI - Zero Installation):**
    - Open any browser (Chrome, Edge, Firefox) on Laptop 2.
-   - Navigate to: `http://<laptop1-ip>:8000/` (e.g. `http://192.168.1.15:8000/`).
-   - Select any of the **10 reserved evaluation trips** from the dropdown.
+   - Navigate to: `http://<laptop1-ip>:8000/` (e.g. `http://10.8.120.252:8000/`).
+   - Select any of the **10 reserved evaluation trips** from the dropdown (`00000015`, `00000017`, `00000023`, `00000030`, `00000049`, `00000059`, `00000067`, `00000073`, `00000087`, `00000094`).
    - Click **Run Map-Matching Pipeline**.
    - View live KPI cards (Top-1 Accuracy, Route Continuity, Processing Time) and the interactive Leaflet map.
 2. **Option B (Standalone Python CLI Client):**
    ```bash
-   python ui/client_app.py --host http://192.168.1.15:8000 --trip 00000000
+   python ui/client_app.py --host http://<laptop1-ip>:8000 --trip 00000073
    ```
 
 ---

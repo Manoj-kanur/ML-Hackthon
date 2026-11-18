@@ -38,7 +38,7 @@ app.add_middleware(
 # Global runtime state
 MODEL = None
 HMM_DECODER = None
-TEST_DATA_DIR = os.path.join("data", "student_test")
+TEST_DATA_DIR = os.path.join("data", "evaluator_test") if os.path.exists(os.path.join("data", "evaluator_test")) else os.path.join("data", "student_test")
 TEST_FEATS_CACHE = None
 
 @app.on_event("startup")
@@ -60,11 +60,18 @@ def load_artifacts():
     HMM_DECODER = MapMatchingHMM(sigma_z=8.0, beta=6.0, gamma=0.65, disconnected_penalty=20.0)
     print(" [PathSnap Server] HMM Decoder initialized.")
 
-    cache_path = os.path.join("artifacts", "student_test_features.parquet")
-    if os.path.exists(cache_path):
-        print(f" [PathSnap Server] Loading pre-extracted candidate feature cache: {cache_path}")
-        TEST_FEATS_CACHE = pd.read_parquet(cache_path)
+    # Load feature caches
+    dfs = []
+    for cname in ["evaluator_test_features.parquet", "student_test_features.parquet"]:
+        cpath = os.path.join("artifacts", cname)
+        if os.path.exists(cpath):
+            print(f" [PathSnap Server] Loading candidate feature cache: {cpath}")
+            dfs.append(pd.read_parquet(cpath))
+    if dfs:
+        TEST_FEATS_CACHE = pd.concat(dfs, ignore_index=True)
     
+    print(f" [PathSnap Server] Active Evaluation Directory: {TEST_DATA_DIR}")
+    print(f" [PathSnap Server] Available Trips: {get_available_trips_list()}")
     print(" [PathSnap Server] Ready to receive evaluation requests!")
     print("=" * 60)
 

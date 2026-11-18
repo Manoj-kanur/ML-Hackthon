@@ -417,9 +417,10 @@ def build_pdf_report(output_pdf="reports/PathSnap_Technical_Report.pdf"):
         story.append(Paragraph("Figure 6: Geographical Map Visualization — Student-Test Trip 00000007 comparing raw GPS, road network, reference route, and PathSnap reconstructed path.", caption_style))
 
     # SECTION 7: API, UI and Deployment
+    story.append(PageBreak())
     story.append(Paragraph("7. API, UI and Two-Laptop Deployment Architecture", h1_style))
     story.append(Paragraph(
-        "PathSnap adheres strictly to the Two-Laptop Deployment Architecture:<br/>"
+        "PathSnap adheres strictly to the Two-Laptop Deployment Architecture mandated by the hackathon guidelines:<br/>"
         "• <b>Laptop 1 (Model Server & API):</b> Hosts the FastAPI backend (<code>uvicorn api.main:app --host 0.0.0.0 --port 8000</code>). "
         "Houses the trained LightGBM weights, HMM Viterbi decoder, road network graphs, and server-side ground truth evaluation logic. "
         "Provides real-time terminal request and inference logging without exposing ground-truth labels to client requests.<br/>"
@@ -429,6 +430,30 @@ def build_pdf_report(output_pdf="reports/PathSnap_Technical_Report.pdf"):
         "• <b>Performance:</b> Full end-to-end evaluation latency is under <b>350 milliseconds</b> per trip, ensuring instantaneous evaluator feedback.",
         body_style
     ))
+    story.append(Spacer(1, 4))
+
+    p_ui = os.path.join('visualizations', 'plots', 'laptop2_ui_evaluator_dashboard.jpg')
+    if os.path.exists(p_ui):
+        story.append(Image(p_ui, width=6.3*inch, height=3.1*inch))
+        story.append(Paragraph("Figure 7: Working Evaluator Web UI on Laptop 2 displaying real-time reconstructed route and metrics for Trip 00000065.", caption_style))
+
+    p_term1 = os.path.join('visualizations', 'plots', 'laptop1_terminal_startup_logs.jpg')
+    p_term2 = os.path.join('visualizations', 'plots', 'laptop1_terminal_inference_logs.jpg')
+    if os.path.exists(p_term1) and os.path.exists(p_term2):
+        term_table = Table([[
+            Image(p_term1, width=3.1*inch, height=1.65*inch),
+            Image(p_term2, width=3.1*inch, height=1.65*inch)
+        ]], colWidths=[3.25*inch, 3.25*inch])
+        term_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('LEFTPADDING', (0, 0), (-1, -1), 2),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+        ]))
+        story.append(term_table)
+        story.append(Paragraph("Figures 8 & 9: Live Terminal Logs on Laptop 1 — (Left) Server startup & client connection; (Right) Real-time evaluation request processing logs.", caption_style))
 
     doc.build(story, canvasmaker=NumberedCanvas)
     print(f"Technical Report PDF generated successfully: {output_pdf}")
