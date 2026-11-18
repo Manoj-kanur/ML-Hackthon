@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PathSnap | Distributed Map-Matching & Route Reconstruction</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --primary: #1e40af;
+            --primary-hover: #1d4ed8;
+            --success: #15803d;
+            --danger: #b91c1c;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-badge {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: white;
+            font-weight: 800;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+        }
+
+        .title-text h1 {
+            font-size: 19px;
+            font-weight: 700;
+        }
+
+        .title-text p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .connection-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #0f172a;
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            padding: 20px 28px;
+            gap: 20px;
+        }
+
+        .sidebar {
+            width: 360px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .map-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 18px;
+        }
+
+        .card h2 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px 12px;
+            background-color: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-size: 13px;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        select:focus, input:focus {
+            border-color: #3b82f6;
+        }
+
+        button.btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #1d4ed8, #2563eb);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button.btn-primary:hover {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            transform: translateY(-1px);
+        }
+
+        button.btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .kpi-card {
+            background-color: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .kpi-card .kpi-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-card .kpi-val {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 4px 0;
+            color: #38bdf8;
+        }
+
+        .kpi-card .kpi-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        #map {
+            flex: 1;
+            min-height: 520px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            z-index: 10;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .diagnostic-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            padding: 6px 0;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .diagnostic-row:last-child {
+            border-bottom: none;
+        }
+
+        .legend-box {
+            background-color: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 11px;
+            color: var(--text-main);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .legend-line {
+            width: 20px;
+            height: 4px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <div class="logo-badge">PathSnap</div>
+            <div class="title-text">
+                <h1>Distributed Map-Matching & Route Reconstruction</h1>
+                <p>Laptop 2: Evaluator User Interface</p>
+            </div>
+        </div>
+        <div class="connection-pill">
+            <div class="status-dot"></div>
+            <span>API Server: </span>
+            <input type="text" id="api-base-url" value="" style="width: 170px; margin: 0; padding: 2px 6px; font-size: 11px;" title="Set Laptop 1 IP/URL">
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Sidebar Controls -->
+        <div class="sidebar">
+            <div class="card">
+                <h2>Evaluation Control Panel</h2>
+                
+                <label for="trip-select">Select Evaluation Trip (10 Reserved Options):</label>
+                <select id="trip-select">
+                    <option value="00000000">Trip 00000000 (2,503 GPS pts)</option>
+                    <option value="00000007">Trip 00000007 (1,354 GPS pts)</option>
+                    <option value="00000009">Trip 00000009 (1,049 GPS pts)</option>
+                    <option value="00000040">Trip 00000040 (2,995 GPS pts)</option>
+                    <option value="00000052">Trip 00000052 (262 GPS pts)</option>
+                    <option value="00000056">Trip 00000056 (3,958 GPS pts)</option>
+                    <option value="00000065">Trip 00000065 (768 GPS pts)</option>
+                    <option value="00000076">Trip 00000076 (1,486 GPS pts)</option>
+                    <option value="00000077">Trip 00000077 (3,911 GPS pts)</option>
+                    <option value="00000091">Trip 00000091 (874 GPS pts)</option>
+                </select>
+
+                <button id="run-btn" class="btn-primary" onclick="runEvaluation()">
+                    <span>Run Map-Matching Pipeline</span>
+                </button>
+            </div>
+
+            <div class="card">
+                <h2>Evaluation Metrics</h2>
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Top-1 Accuracy</div>
+                        <div class="kpi-val" id="kpi-acc">--</div>
+                        <div class="kpi-sub" id="kpi-acc-sub">vs Clf: --</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Route Continuity</div>
+                        <div class="kpi-val" id="kpi-continuity" style="color:#4ade80;">--</div>
+                        <div class="kpi-sub" id="kpi-conn-sub">vs Clf: --</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Inference Time</div>
+                        <div class="kpi-val" id="kpi-time" style="color:#fbbf24;">--</div>
+                        <div class="kpi-sub" id="kpi-pts-sub">Total pts: --</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Candidate Miss</div>
+                        <div class="kpi-val" id="kpi-miss" style="color:#f87171;">--</div>
+                        <div class="kpi-sub">Spatial recall</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Server Latency Diagnostics</h2>
+                <div class="diagnostic-row">
+                    <span style="color:var(--text-muted)">Candidate Extraction:</span>
+                    <strong id="diag-feat">--</strong>
+                </div>
+                <div class="diagnostic-row">
+                    <span style="color:var(--text-muted)">Classifier Inference:</span>
+                    <strong id="diag-clf">--</strong>
+                </div>
+                <div class="diagnostic-row">
+                    <span style="color:var(--text-muted)">HMM Viterbi Trellis:</span>
+                    <strong id="diag-hmm">--</strong>
+                </div>
+                <div class="diagnostic-row">
+                    <span style="color:var(--text-muted)">Total Response Latency:</span>
+                    <strong id="diag-total" style="color:#38bdf8">--</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Map Section -->
+        <div class="map-section">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Set default API host to current origin or localhost
+        const hostInput = document.getElementById('api-base-url');
+        hostInput.value = window.location.origin.includes('http') ? window.location.origin : 'http://localhost:8000';
+
+        // Initialize Map
+        const map = L.map('map').setView([53.25, 50.25], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Layer groups
+        const layerGPS = L.layerGroup().addTo(map);
+        const layerTruth = L.layerGroup().addTo(map);
+        const layerPredicted = L.layerGroup().addTo(map);
+
+        // Layer toggle control
+        L.control.layers(null, {
+            '<span style="color:#60a5fa">● Raw GPS Points</span>': layerGPS,
+            '<span style="color:#22c55e">━ Ground Truth Route</span>': layerTruth,
+            '<span style="color:#ef4444">┅ PathSnap Reconstructed</span>': layerPredicted
+        }, { collapsed: false, position: 'topright' }).addTo(map);
+
+        // Add custom legend
+        const legend = L.control({ position: 'bottomleft' });
+        legend.onAdd = function () {
+            const div = L.DomUtil.create('div', 'legend-box');
+            div.innerHTML = `
+                <div style="font-weight:700; margin-bottom:6px; color:#f8fafc;">PathSnap Map Layers</div>
+                <div class="legend-item"><div class="legend-line" style="background:#007bff;"></div><span>Blue Dots: Raw Noisy GPS</span></div>
+                <div class="legend-item"><div class="legend-line" style="background:#22c55e;"></div><span>Solid Green: Reference Route</span></div>
+                <div class="legend-item"><div class="legend-line" style="border-bottom:3px dashed #ef4444;"></div><span>Dashed Red: PathSnap Predicted</span></div>
+            `;
+            return div;
+        };
+        legend.addTo(map);
+
+        async function runEvaluation() {
+            const tripId = document.getElementById('trip-select').value;
+            const baseUrl = hostInput.value.trim().replace(/\/$/, '');
+            const btn = document.getElementById('run-btn');
+
+            btn.disabled = true;
+            btn.innerHTML = `<span class="loading-spinner"></span> <span>Running PathSnap Pipeline...</span>`;
+
+            try {
+                const res = await fetch(`${baseUrl}/api/evaluate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trip_id: tripId })
+                });
+
+                if (!res.ok) {
+                    throw new Error(`API returned HTTP ${res.status}`);
+                }
+
+                const data = await res.json();
+                renderResults(data);
+            } catch (err) {
+                alert(`Evaluation failed: ${err.message}. Ensure Laptop 1 API is running on ${baseUrl}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>Run Map-Matching Pipeline</span>`;
+            }
+        }
+
+        function renderResults(data) {
+            // Update KPI cards
+            document.getElementById('kpi-acc').innerText = `${data.metrics.top1_accuracy}%`;
+            document.getElementById('kpi-acc-sub').innerText = `vs Clf: ${data.metrics.classifier_accuracy}%`;
+
+            document.getElementById('kpi-continuity').innerText = `${data.metrics.route_continuity}%`;
+            document.getElementById('kpi-conn-sub').innerText = `vs Clf: ${data.metrics.classifier_continuity}%`;
+
+            document.getElementById('kpi-time').innerText = `${data.total_time_ms} ms`;
+            document.getElementById('kpi-pts-sub').innerText = `Total pts: ${data.total_points}`;
+
+            document.getElementById('kpi-miss').innerText = `${data.metrics.candidate_miss_rate}%`;
+
+            // Diagnostics
+            document.getElementById('diag-feat').innerText = `${data.metrics.feature_time_ms} ms`;
+            document.getElementById('diag-clf').innerText = `${data.metrics.classifier_time_ms} ms`;
+            document.getElementById('diag-hmm').innerText = `${data.metrics.hmm_time_ms} ms`;
+            document.getElementById('diag-total').innerText = `${data.total_time_ms} ms`;
+
+            // Render Map Layers
+            layerGPS.clearLayers();
+            layerTruth.clearLayers();
+            layerPredicted.clearLayers();
+
+            const boundsCoords = [];
+
+            // 1. Raw GPS points
+            if (data.map_data.raw_gps) {
+                data.map_data.raw_gps.forEach(pt => {
+                    L.circleMarker(pt, {
+                        radius: 3.5,
+                        color: '#0284c7',
+                        fillColor: '#38bdf8',
+                        fillOpacity: 0.7,
+                        weight: 1
+                    }).addTo(layerGPS);
+                    boundsCoords.push(pt);
+                });
+            }
+
+            // 2. Ground Truth Route
+            if (data.map_data.ground_truth_route && data.map_data.ground_truth_route.length > 0) {
+                L.polyline(data.map_data.ground_truth_route, {
+                    color: '#22c55e',
+                    weight: 5.5,
+                    opacity: 0.85
+                }).addTo(layerTruth);
+            }
+
+            // 3. Predicted Route
+            if (data.map_data.predicted_route && data.map_data.predicted_route.length > 0) {
+                L.polyline(data.map_data.predicted_route, {
+                    color: '#ef4444',
+                    weight: 4.0,
+                    opacity: 0.9,
+                    dashArray: '7, 7'
+                }).addTo(layerPredicted);
+            }
+
+            if (boundsCoords.length > 0) {
+                map.fitBounds(boundsCoords, { padding: [30, 30] });
+            }
+        }
+
+        // Run default evaluation on load
+        window.addEventListener('DOMContentLoaded', () => {
+            runEvaluation();
+        });
+    </script>
+</body>
+</html>

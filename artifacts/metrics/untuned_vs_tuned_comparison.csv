@@ -1,0 +1,3 @@
+Version,CV Macro F1,Student-Test Top-1 Acc (%),Student-Test Macro F1,Route Continuity (%),Log Loss,Training Time (s),Inference Latency (µs/obs)
+Untuned LightGBM,0.8499,67.57,0.8391,94.7,0.1973,3.0,0.64
+Tuned LightGBM (Bayesian),0.8574,67.67,0.8388,94.58,0.1952,7.47,1.75

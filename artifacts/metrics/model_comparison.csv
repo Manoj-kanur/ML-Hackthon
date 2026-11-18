@@ -1,0 +1,6 @@
+Model,Algorithm Family,Key Configuration,CV Macro F1,Student-Test Top-1 Acc (%),Route Continuity (%),Student-Test Macro F1,Precision,Recall,Log Loss,Training Time (s),Inference Latency (µs/obs)
+Logistic Regression,Linear and Probabilistic,"L2 penalty, C=1.0, StandardScaler, lbfgs solver",0.8177,66.36,93.76,0.8203,0.6662,0.7227,0.2215,1.88,0.13
+Decision Tree,Tree-based,"max_depth=12, min_samples_leaf=20, Gini criterion",0.8002,67.33,94.36,0.8374,0.6759,0.7797,0.2222,9.97,0.11
+Random Forest,Ensemble (Bagging),"n_estimators=100, max_depth=16, min_samples_leaf=10",0.8538,67.61,94.54,0.8393,0.6874,0.7707,0.1961,63.42,1.55
+LightGBM,Boosting,"n_estimators=100, lr=0.08, num_leaves=31, colsample=0.8",0.8499,67.57,94.7,0.8391,0.6796,0.7813,0.1973,3.0,0.64
+MLP Neural Network,Neural Networks,"hidden=(128, 64), ReLU, alpha=1e-3, Adam, early_stopping",0.8359,67.08,94.84,0.8364,0.6828,0.7652,0.2136,127.73,1.76
