@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large binary feature cache (can be regenerated via python -m src.features.builder)
+artifacts/train_features.parquet
+
+# Oversized model artifacts (>50MB triggers GitHub GH001 warnings)
+artifacts/models/random_forest.pkl
+
+# Temporary test scripts and log files
+test.*
+test_server.py
+*.log
+
+# Environments and IDEs
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific
+.DS_Store
+Thumbs.db
